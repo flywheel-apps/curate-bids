@@ -1,0 +1,46 @@
+#! /bin/bash
+#
+# Run script for flywheel/curate-bids Gear
+# Authorship: Jennifer Reiter
+
+# Define directory names and containers
+
+FLYWHEEL_BASE=/flywheel/v0
+CONFIG_FILE=$FLYWHEEL_BASE/config.json
+
+
+##############################################################################
+# Parse configuration options
+
+# If config.json exists, then we parse config file and cast vals to ENV Vars
+# (Flywheel gear run). Otherwise we parse manifest.json and cast the values to
+# ENV Vars from manifest (Docker run) Note value.default is used to grab the
+# configured defaults.
+
+if [[ -f $CONFIG_FILE ]]; then
+  eval $(jq -r '.config | to_entries[] | "config_\(.key)=\"\(.value)\""' $CONFIG_FILE)
+else
+  CONFIG_FILE=$FLYWHEEL_BASE/manifest.json
+  eval $(jq -r '.config | to_entries[] | "config_\(.key)=\(.value.default)"' $CONFIG_FILE)
+fi
+
+# Get API KEY
+APIKEY=$(jq -r '.inputs.api_key.key' $CONFIG_FILE)
+
+##############################################################################
+# Notify User that BIDS curation is being run on project label
+echo "BIDS Curation templates are being un on Project: $config_project_label"
+
+# Run curate_bids python script
+python /flywheel/v0/curate_bids.py --api-key $APIKEY -p "$config_project_label"
+curate_exit_status=$?
+
+##############################################################################
+# Handle Exit status
+if [[ $curate_exit_status == 0 ]]; then
+  echo -e "${CONTAINER} Success!"
+  exit 0
+else
+  echo "${CONTAINER}  Something went wrong! Curate BIDS exited non-zero!"
+  exit 1
+fi
