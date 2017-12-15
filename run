@@ -29,7 +29,7 @@ APIKEY=$(jq -r '.inputs.api_key.key' $CONFIG_FILE)
 
 ##############################################################################
 # Notify User that BIDS curation is being run on project label
-echo "BIDS Curation templates are being un on Project: $config_project_label"
+echo "BIDS Curation templates are being run on Project: $config_project_label"
 
 # Run curate_bids python script
 python /flywheel/v0/curate_bids.py --api-key $APIKEY -p "$config_project_label"
