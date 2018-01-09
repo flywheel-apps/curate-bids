@@ -19,12 +19,12 @@ COPY run ${FLYWHEEL}/run
 COPY manifest.json ${FLYWHEEL}/manifest.json
 
 # Copy code into place
-ADD https://raw.githubusercontent.com/flywheel-io/bids-client/master/curate_bids.py?token=AWK3zPF-uXts9N-9SH9hYBXgQVKcQpE3ks5aPSPgwA%3D%3D ${FLYWHEEL}/curate_bids.py
-ADD https://raw.githubusercontent.com/flywheel-io/bids-client/master/supporting_files/bidsify_flywheel.py?token=AWK3zNW2vO49Umrxq8YgLsH6lUlU794eks5aPSjgwA%3D%3D ${FLYWHEEL}/supporting_files/bidsify_flywheel.py
-ADD https://raw.githubusercontent.com/flywheel-io/bids-client/master/supporting_files/utils.py?token=AWK3zM-WkIsWINlhAn2u7N1fdOMqltsJks5aPSkBwA%3D%3D ${FLYWHEEL}/supporting_files/utils.py
-ADD https://raw.githubusercontent.com/flywheel-io/bids-client/master/supporting_files/__init__.py?token=AWK3zKrpvdr5jHH65Vo6cKxQmSR77yoPks5aPTCvwA%3D%3D ${FLYWHEEL}/supporting_files/__init__.py
-ADD https://raw.githubusercontent.com/flywheel-io/bids-client/master/supporting_files/classifications.py?token=AWK3zEbMM0Y8QhLza2tgVU_3_PoZMppiks5aPTD_wA%3D%3D ${FLYWHEEL}/supporting_files/classifications.py
-ADD https://raw.githubusercontent.com/flywheel-io/bids-client/master/supporting_files/templates.py?token=AWK3zCCHOpwwpUGST9EJUdJ8ZCmuP45iks5aPTFPwA%3D%3D ${FLYWHEEL}/supporting_files/templates.py
+ADD https://raw.githubusercontent.com/flywheel-io/bids-client/master/curate_bids.py ${FLYWHEEL}/curate_bids.py
+ADD https://raw.githubusercontent.com/flywheel-io/bids-client/master/supporting_files/bidsify_flywheel.py ${FLYWHEEL}/supporting_files/bidsify_flywheel.py
+ADD https://raw.githubusercontent.com/flywheel-io/bids-client/master/supporting_files/utils.py ${FLYWHEEL}/supporting_files/utils.py
+ADD https://raw.githubusercontent.com/flywheel-io/bids-client/master/supporting_files/__init__.py ${FLYWHEEL}/supporting_files/__init__.py
+ADD https://raw.githubusercontent.com/flywheel-io/bids-client/master/supporting_files/classifications.py ${FLYWHEEL}/supporting_files/classifications.py
+ADD https://raw.githubusercontent.com/flywheel-io/bids-client/master/supporting_files/templates.py ${FLYWHEEL}/supporting_files/templates.py
 
 
 RUN chmod +x ${FLYWHEEL}/curate_bids.py
