@@ -10,7 +10,7 @@ RUN apt-get update && apt-get -y install jq
 RUN pip install jsonschema==2.6.0
 
 # Install python SDK
-RUN pip install https://github.com/flywheel-io/sdk/releases/download/0.2.0/flywheel-0.2.0-py2-none-linux_x86_64.whl
+RUN pip install https://github.com/flywheel-io/sdk/releases/download/0.3.0/flywheel-0.3.0-py2-none-linux_x86_64.whl
 
 # Make directory for flywheel spec (v0)
 ENV FLYWHEEL /flywheel/v0
@@ -25,7 +25,7 @@ ADD https://raw.githubusercontent.com/flywheel-io/bids-client/master/supporting_
 ADD https://raw.githubusercontent.com/flywheel-io/bids-client/master/supporting_files/__init__.py?token=AWK3zKrpvdr5jHH65Vo6cKxQmSR77yoPks5aPTCvwA%3D%3D ${FLYWHEEL}/supporting_files/__init__.py
 ADD https://raw.githubusercontent.com/flywheel-io/bids-client/master/supporting_files/classifications.py?token=AWK3zEbMM0Y8QhLza2tgVU_3_PoZMppiks5aPTD_wA%3D%3D ${FLYWHEEL}/supporting_files/classifications.py
 ADD https://raw.githubusercontent.com/flywheel-io/bids-client/master/supporting_files/templates.py?token=AWK3zCCHOpwwpUGST9EJUdJ8ZCmuP45iks5aPTFPwA%3D%3D ${FLYWHEEL}/supporting_files/templates.py
-
+ADD https://raw.githubusercontent.com/flywheel-io/bids-client/master/templates/bids-v1.json?token=AWK3zCCHOpwwpUGST9EJUdJ8ZCmuP45iks5aPTFPwA%3D%3D ${FLYWHEEL}/templates/bids-v1.json 
 
 RUN chmod +x ${FLYWHEEL}/curate_bids.py
 RUN chmod +x ${FLYWHEEL}/supporting_files/bidsify_flywheel.py
