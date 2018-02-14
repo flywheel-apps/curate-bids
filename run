@@ -30,12 +30,19 @@ APIKEY=$(jq -r '.inputs.api_key.key' $CONFIG_FILE)
 # Get Session ID
 CONFIG_SESSIONID=$(jq -r '.destination.id' $CONFIG_FILE)
 
+# Boolean parsing of reset config option
+if [[ $config_reset == 'true' ]]; then
+  RESET_FLAG='--reset'
+else
+  RESET_FLAG=''
+fi
+
 ##############################################################################
 # Notify User that BIDS curation is being run on project label
 echo "BIDS Curation templates are being run on entire Project for session: $CONFIG_SESSIONID"
 
 # Run curate_bids python script
-python /flywheel/v0/curate_bids.py --api-key $APIKEY --session "$CONFIG_SESSIONID"
+python /flywheel/v0/curate_bids.py --api-key $APIKEY --session "$CONFIG_SESSIONID" "$RESET_FLAG"
 curate_exit_status=$?
 
 ##############################################################################
