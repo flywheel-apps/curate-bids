@@ -11,5 +11,6 @@ if __name__ == '__main__':
     api_key = config['inputs']['api_key']['key']
     session_id = config['destination']['id']
     reset = config['config']['reset']
+    subject_only = not config['config']['entire_project']
 
-    main_with_args(api_key, session_id, reset)
+    main_with_args(api_key, session_id, reset, subject_only)
