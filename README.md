@@ -32,6 +32,8 @@ Below is the template of the local config file (JSON file)
             "base" : "api-key",
             "key" : "<PLACE YOUR API KEY HERE>"
         }
-    }
+    },
+    "destination" : {
+	"id" : "<PLACE YOUR SESSION ID HERE>"
 }
 ```

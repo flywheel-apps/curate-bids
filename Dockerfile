@@ -1,6 +1,6 @@
 # curate-bids
 
-FROM flywheel/bids-client:0.6.8
+FROM flywheel/bids-client:0.9.0
 MAINTAINER Flywheel <support@flywheel.io>
 
 # Install JQ to parse config file
@@ -12,5 +12,6 @@ RUN mkdir -p ${FLYWHEEL}
 COPY run.py ${FLYWHEEL}/run.py
 COPY manifest.json ${FLYWHEEL}/manifest.json
 
-# Set the entrypoint
-ENTRYPOINT ["/flywheel/v0/run"]
+# Set the command for local runs
+CMD python3 /flywheel/v0/run.py
+
