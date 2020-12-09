@@ -1,6 +1,6 @@
 # curate-bids
 
-FROM flywheel/bids-client:0.9.1
+FROM flywheel/bids-client:0.9.1--TODO:new version
 MAINTAINER Flywheel <support@flywheel.io>
 
 # Install JQ to parse config file
