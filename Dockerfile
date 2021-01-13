@@ -1,6 +1,6 @@
 # curate-bids
 
-FROM flywheel/bids-client:0.9.1
+FROM flywheel/bids-client:redo-Gear-428-template-selection
 MAINTAINER Flywheel <support@flywheel.io>
 
 # Install JQ to parse config file
@@ -14,4 +14,3 @@ COPY manifest.json ${FLYWHEEL}/manifest.json
 
 # Set the command for local runs
 CMD python3 /flywheel/v0/run.py
-
