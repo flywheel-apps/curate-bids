@@ -25,7 +25,9 @@ Below is the template of the local config file (JSON file)
 ```
 {
     "config" : {
-        "project_label" : "<ENTER PROJECT LABEL TO CURATE>"
+        "reset": true,
+        "entire_project": true,
+        "template_type": "Default"
     },
     "inputs" : {
         "api_key" : {
@@ -34,6 +36,7 @@ Below is the template of the local config file (JSON file)
         }
     },
     "destination" : {
-	"id" : "<PLACE YOUR SESSION ID HERE>"
+        	"id" : "<PLACE YOUR SESSION ID HERE>"
+    }
 }
 ```
