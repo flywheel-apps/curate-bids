@@ -8,7 +8,7 @@ if __name__ == "__main__":
         api_key = gear_context.get_input("api_key")["key"]
         session_id = gear_context.destination["id"]
         reset = gear_context.config.get("reset")
-        subject_only = not gear_context.config.get("entire_project")
+        session_only = not gear_context.config.get("entire_project")
         template_type = gear_context.config.get("template_type")
 
-        main_with_args(api_key, session_id, reset, subject_only, template_type)
+        main_with_args(api_key, session_id, reset, session_only, template_type)
