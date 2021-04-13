@@ -10,5 +10,11 @@ if __name__ == "__main__":
         reset = gear_context.config.get("reset")
         session_only = not gear_context.config.get("entire_project")
         template_type = gear_context.config.get("template_type")
+        if gear_context.config.get("verbosity") == "INFO":
+            verbosity = 0
+        elif gear_context.config.get("verbosity") == "DEBUG":
+            verbosity = 1
 
-        main_with_args(api_key, session_id, reset, session_only, template_type)
+        main_with_args(
+            api_key, session_id, reset, session_only, template_type, verbosity
+        )

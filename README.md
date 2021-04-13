@@ -31,6 +31,10 @@ Warning: if you have manually selected any container or file to be ignored by ch
 
 Which template type to use. Options: Default, ReproIn, or Custom. Note: Custom expects a BIDS Project Curation JSON Template as a project-level file with the filename ending in project-template.json.
 
+### verbosity
+
+This defaults to INFO but set it to DEBUG to see exactly what is happening to help with figuring out BIDS curation.
+
 ## Outputs
 
 The "outputs" of this gear are metadata written to the "BIDS" namespace in all container's and file's Custom Information.  See the [BIDS Introduction](https://docs.flywheel.io/hc/en-us/articles/360008162154-BIDS-Overview) for more information.

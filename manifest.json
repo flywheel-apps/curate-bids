@@ -6,11 +6,11 @@
   "maintainer": "Flywheel <support@flywheel.io>",
   "source": "https://github.com/flywheel-apps/curate-bids",
   "url": "http://bids.neuroimaging.io/",
-  "version": "1.1.0_0.10.0_dev3",
+  "version": "1.1.1_0.9.3_rc2",
   "custom": {
     "gear-builder": {
       "category": "converter",
-      "image": "flywheel/curate-bids:1.1.0_0.10.0_dev3"
+      "image": "flywheel/curate-bids:1.1.1_0.9.3_rc2"
     },
     "flywheel": {
       "suite": "BIDS"
@@ -29,7 +29,7 @@
       "default": false
     },
     "entire_project": {
-      "description": "Run bids curation on the entire project",
+      "description": "Run bids curation on the entire project.  If this is not selected then run on only the current session.",
       "type": "boolean",
       "default": true
     },
@@ -39,8 +39,18 @@
       "default": "Default",
       "enum": [
         "Default",
+        "BIDS-v1",
         "ReproIn",
         "Custom"
+      ]
+    },
+    "verbosity": {
+      "description": "Set log level to INFO or DEBUG.",
+      "type": "string",
+      "default": "INFO",
+      "enum": [
+        "INFO",
+        "DEBUG"
       ]
     }
   },
