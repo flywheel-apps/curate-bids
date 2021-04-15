@@ -40,35 +40,49 @@ def save_curation_csvs(fw, group_label, project_label):
 
         do_print(f"{ii}  {acquisition.label}")
         for file in acquisition.reload().files:
-            if file.info["BIDS"] == "NA":
-                print(f"{acquisition.label}, {file.name}, {file.type}, nonBids")
-                nifti_df.loc[ii] = [acquisition.label, file.name, file.type, f"nonBids"]
-            else:
-                if not file.info["BIDS"]["ignore"]:
-                    print(
-                        f"{acquisition.label}, "
-                        f"{file.name}, "
-                        f"{file.type}, "
-                        f"{file.info['BIDS']['Folder']}/{file.info['BIDS']['Filename']}"
-                    )
+            if "BIDS" in file.info:
+                if file.info["BIDS"] == "NA":
+                    print(f"{acquisition.label}, {file.name}, {file.type}, nonBids")
                     nifti_df.loc[ii] = [
                         acquisition.label,
                         file.name,
                         file.type,
-                        f"{file.info['BIDS']['Folder']}/{file.info['BIDS']['Filename']}",
+                        f"nonBids",
                     ]
                 else:
-                    print(f"{acquisition.label}, {file.name}, {file.type}, Ignored")
-                    nifti_df.loc[ii] = [
-                        acquisition.label,
-                        file.name,
-                        file.type,
-                        "Ignored",
-                    ]
-            if "IntendedFor" in file.info["BIDS"]:
-                intended_for_acquisition[file.name] = acquisition.label
-                intended_for_dirs[file.name] = file.info["BIDS"]["IntendedFor"]
-                intended_fors[file.name] = file.info["IntendedFor"]
+                    if not file.info["BIDS"]["ignore"]:
+                        print(
+                            f"{acquisition.label}, "
+                            f"{file.name}, "
+                            f"{file.type}, "
+                            f"{file.info['BIDS']['Folder']}/{file.info['BIDS']['Filename']}"
+                        )
+                        nifti_df.loc[ii] = [
+                            acquisition.label,
+                            file.name,
+                            file.type,
+                            f"{file.info['BIDS']['Folder']}/{file.info['BIDS']['Filename']}",
+                        ]
+                    else:
+                        print(f"{acquisition.label}, {file.name}, {file.type}, Ignored")
+                        nifti_df.loc[ii] = [
+                            acquisition.label,
+                            file.name,
+                            file.type,
+                            "Ignored",
+                        ]
+                if "IntendedFor" in file.info["BIDS"]:
+                    intended_for_acquisition[file.name] = acquisition.label
+                    intended_for_dirs[file.name] = file.info["BIDS"]["IntendedFor"]
+                    intended_fors[file.name] = file.info["IntendedFor"]
+            else:
+                print(f"{acquisition.label}, {file.name}, {file.type}, Not_yet_BIDS_curated")
+                nifti_df.loc[ii] = [
+                    acquisition.label,
+                    file.name,
+                    file.type,
+                    f"Not_yet_BIDS_curated",
+                ]
             ii += 1
 
     nifti_df.sort_values(by=["Curated BIDS path"], inplace=True)
