@@ -1,10 +1,6 @@
 # curate-bids
 
-# FROM flywheel/curate-bids:GEAR-743-add-template-selection-feature
-# FROM flywheel/bids-client:release-candidate
-# FROM flywheel/bids-client:release-candidate.5734fdb5
-# FROM flywheel/bids-client:GEAR-426-enhanced-logging
-FROM flywheel/bids-client:release-candidate
+FROM flywheel/bids-client:master
 MAINTAINER Flywheel <support@flywheel.io>
 
 # Install JQ to parse config file
