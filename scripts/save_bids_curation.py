@@ -22,11 +22,11 @@ def save_curation_csvs(fw, group_label, project_label):
 
     project = fw.projects.find_one(f"group={group_label},label={project_label}")
 
-    intended_for_acquisition = dict()
-    intended_for_dirs = dict()
-    intended_fors = dict()
+    all_intended_for_acquisition = dict()
+    all_intended_for_dirs = dict()
+    all_intended_fors = dict()
 
-    nifti_df = pd.DataFrame(
+    all_df = pd.DataFrame(
         columns=(
             "Acquisition label (SeriesDescription)",
             "File name",
@@ -35,59 +35,89 @@ def save_curation_csvs(fw, group_label, project_label):
         )
     )
 
-    ii = 0  # Current acquisition index
-    for acquisition in fw.acquisitions.iter_find(f"project={project.id}"):
+    for subject in project.subjects.iter_find():
 
-        do_print(f"{ii}  {acquisition.label}")
-        for file in acquisition.reload().files:
-            if "BIDS" in file.info:
-                if file.info["BIDS"] == "NA":
-                    print(f"{acquisition.label}, {file.name}, {file.type}, nonBids")
-                    nifti_df.loc[ii] = [
-                        acquisition.label,
-                        file.name,
-                        file.type,
-                        f"nonBids",
-                    ]
-                else:
-                    if not file.info["BIDS"]["ignore"]:
-                        print(
-                            f"{acquisition.label}, "
-                            f"{file.name}, "
-                            f"{file.type}, "
-                            f"{file.info['BIDS']['Folder']}/{file.info['BIDS']['Filename']}"
+        do_print(subject.label)
+
+        intended_for_acquisition = dict()
+        intended_for_dirs = dict()
+        intended_fors = dict()
+
+        nifti_df = pd.DataFrame(
+            columns=(
+                "Acquisition label (SeriesDescription)",
+                "File name",
+                "File type",
+                "Curated BIDS path",
+            )
+        )
+
+        ii = 0  # Current acquisition index
+
+        for acquisition in fw.acquisitions.iter_find(f"subject={subject.id}"):
+
+            do_print(f"{ii}  {acquisition.label}")
+            for file in acquisition.reload().files:
+                if "BIDS" in file.info:
+                    if file.info["BIDS"] == "NA":
+                        do_print(
+                            f"{acquisition.label}, {file.name}, {file.type}, nonBids"
                         )
                         nifti_df.loc[ii] = [
                             acquisition.label,
                             file.name,
                             file.type,
-                            f"{file.info['BIDS']['Folder']}/{file.info['BIDS']['Filename']}",
+                            f"nonBids",
                         ]
                     else:
-                        print(f"{acquisition.label}, {file.name}, {file.type}, Ignored")
-                        nifti_df.loc[ii] = [
-                            acquisition.label,
-                            file.name,
-                            file.type,
-                            "Ignored",
-                        ]
-                if "IntendedFor" in file.info["BIDS"]:
-                    intended_for_acquisition[file.name] = acquisition.label
-                    intended_for_dirs[file.name] = file.info["BIDS"]["IntendedFor"]
-                    intended_fors[file.name] = file.info["IntendedFor"]
-            else:
-                print(f"{acquisition.label}, {file.name}, {file.type}, Not_yet_BIDS_curated")
-                nifti_df.loc[ii] = [
-                    acquisition.label,
-                    file.name,
-                    file.type,
-                    f"Not_yet_BIDS_curated",
-                ]
-            ii += 1
+                        if not file.info["BIDS"]["ignore"]:
+                            do_print(
+                                f"{acquisition.label}, "
+                                f"{file.name}, "
+                                f"{file.type}, "
+                                f"{file.info['BIDS']['Folder']}/{file.info['BIDS']['Filename']}"
+                            )
+                            nifti_df.loc[ii] = [
+                                acquisition.label,
+                                file.name,
+                                file.type,
+                                f"{file.info['BIDS']['Folder']}/{file.info['BIDS']['Filename']}",
+                            ]
+                        else:
+                            do_print(
+                                f"{acquisition.label}, {file.name}, {file.type}, ignored"
+                            )
+                            nifti_df.loc[ii] = [
+                                acquisition.label,
+                                file.name,
+                                file.type,
+                                "ignored",
+                            ]
+                    if "IntendedFor" in file.info["BIDS"]:
+                        intended_for_acquisition[file.name] = acquisition.label
+                        intended_for_dirs[file.name] = file.info["BIDS"]["IntendedFor"]
+                        intended_fors[file.name] = file.info["IntendedFor"]
+                else:
+                    do_print(
+                        f"{acquisition.label}, {file.name}, {file.type}, Not_yet_BIDS_curated"
+                    )
+                    nifti_df.loc[ii] = [
+                        acquisition.label,
+                        file.name,
+                        file.type,
+                        f"Not_yet_BIDS_curated",
+                    ]
+                ii += 1
 
-    nifti_df.sort_values(by=["Curated BIDS path"], inplace=True)
+        nifti_df.sort_values(by=["Curated BIDS path"], inplace=True)
 
-    nifti_df.to_csv(f"{group_label}_{project_label}_niftis.csv", index=False)
+        all_df = all_df.append(nifti_df)
+
+        all_intended_for_acquisition[subject.label] = intended_for_acquisition
+        all_intended_for_dirs[subject.label] = intended_for_dirs
+        all_intended_fors[subject.label] = intended_fors
+
+    all_df.to_csv(f"{group_label}_{project_label}_niftis.csv", index=False)
 
     do_print("")
 
@@ -105,16 +135,18 @@ def save_curation_csvs(fw, group_label, project_label):
             ]
         )
 
-        for k, v in intended_for_dirs.items():
-            do_print(f"{intended_for_acquisition[k]}, {k}")
-            intendedfors_writer.writerow([intended_for_acquisition[k], k])
-            for i in v:
-                do_print(f",{i['Folder']}")
-                intendedfors_writer.writerow(["", i["Folder"]])
-                intended_fors[k].sort()
-                for j in intended_fors[k]:
-                    do_print(f",,{j}")
-                    intendedfors_writer.writerow(["", "", j])
+        for subj in all_intended_for_dirs:
+
+            for k, v in all_intended_for_dirs[subj].items():
+                do_print(f"{all_intended_for_acquisition[subj][k]}, {k}")
+                intendedfors_writer.writerow([all_intended_for_acquisition[subj][k], k])
+                for i in v:
+                    do_print(f",{i['Folder']}")
+                    intendedfors_writer.writerow(["", i["Folder"]])
+                    all_intended_fors[subj][k].sort()
+                    for j in all_intended_fors[subj][k]:
+                        do_print(f",,{j}")
+                        intendedfors_writer.writerow(["", "", j])
 
 
 if __name__ == "__main__":
