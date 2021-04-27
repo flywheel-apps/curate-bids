@@ -54,6 +54,17 @@ def do_print(msg):
 
 
 def save_curation_csvs(fw, group_label, project_label):
+    """Save BIDS mapping from acquisition names to BIDS paths and fieldmap IntendedFors.
+
+    Two csv files, sorted by subject, will be saved.
+
+    Args:
+        fw (flywheel.client.Client): active Flywheel client
+        group_label (str) Group ID (label, not Group name)
+        project_label (str) Project label
+
+    Returns: nothing
+    """
 
     project = fw.projects.find_one(f"group={group_label},label={project_label}")
 
@@ -72,6 +83,7 @@ def save_curation_csvs(fw, group_label, project_label):
         )
     )
 
+    # Look through all files in the project and get their BIDS path
     for subject in project.subjects.iter_find():
 
         do_print(subject.label)
@@ -88,10 +100,13 @@ def save_curation_csvs(fw, group_label, project_label):
                 "File name",
                 "File type",
                 "Curated BIDS path",
+                "Unique?",
             )
         )
 
         ii = 0  # Current acquisition index
+
+        seen_paths = dict()
 
         for acquisition in fw.acquisitions.iter_find(f"subject={subject.id}"):
 
@@ -130,9 +145,19 @@ def save_curation_csvs(fw, group_label, project_label):
                 else:
                     series_number = "?"
 
+                # Detect Duplicates
+                if bids_path in ["ignored", "nonBids", "Not_yet_BIDS_curated"]:
+                    unique = ""
+                elif bids_path in seen_paths:
+                    seen_paths[bids_path] += 1
+                    unique = f"duplicate {seen_paths[bids_path]}"
+                else:
+                    seen_paths[bids_path] = 0
+                    unique = "unique"
+
                 do_print(
                     f"{series_number}, {acquisition.label}, "
-                    + f"{file.name}, {file.type}, {bids_path}"
+                    + f"{file.name}, {file.type}, {bids_path}, {unique}"
                 )
 
                 nifti_df.loc[ii] = [
@@ -141,6 +166,7 @@ def save_curation_csvs(fw, group_label, project_label):
                     file.name,
                     file.type,
                     bids_path,
+                    unique
                 ]
                 ii += 1
 
@@ -156,10 +182,12 @@ def save_curation_csvs(fw, group_label, project_label):
     safe_group_label = make_file_name_safe(group_label, replace_str="_")
     safe_project_label = make_file_name_safe(project_label, replace_str="_")
 
+    # Save acquisition/file name -> bids path mapping
     all_df.to_csv(f"{safe_group_label}_{safe_project_label}_niftis.csv", index=False)
 
     do_print("")
 
+    # save field map IntendedFor lists
     with open(
         f"{safe_group_label}_{safe_project_label}_intendedfors.csv", mode="w"
     ) as intendedfors_file:
@@ -190,7 +218,8 @@ def save_curation_csvs(fw, group_label, project_label):
                             do_print(f",,{j}")
                             intendedfors_writer.writerow(["", "", j])
 
-        if args.intended_for:
+        # Keep only proper file paths if they match fieldmaps as per provided regexes
+        if args.intended_for:  
 
             string_pairs = zip(args.intended_for[::2], args.intended_for[1::2])
             # for pair in string_pairs:
@@ -226,11 +255,13 @@ def save_curation_csvs(fw, group_label, project_label):
                                     }
                                 },
                             )
+        else:
+            new_intended_fors = all_intended_fors
 
         if args.verbose > 0:
             intendedfors_writer.writerow(["Final values (after correction)"])
 
-        # write out final values
+        # write out final values of IntendedFor lists
         intendedfors_writer.writerow(
             [
                 "",
