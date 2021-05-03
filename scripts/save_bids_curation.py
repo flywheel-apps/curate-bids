@@ -107,68 +107,76 @@ def save_curation_csvs(fw, group_label, project_label):
         ii = 0  # Current acquisition index
 
         seen_paths = dict()
+        num_duplicates = 0
 
-        for acquisition in fw.acquisitions.iter_find(f"subject={subject.id}"):
+        for session in subject.sessions():
+            for acquisition in session.acquisitions():
 
-            do_print(f"{ii}  {acquisition.label}")
+                do_print(f"{ii}  {acquisition.label}")
 
-            for file in acquisition.reload().files:
+                for file in acquisition.reload().files:
 
-                # determine full BIDS path
-                if "BIDS" in file.info:
-                    if file.info["BIDS"] == "NA":
-                        bids_path = "nonBids"
-                    else:
-                        bids_path = ""
-                        expected = ["ignore", "Folder", "Filename"]
-                        for key in expected:
-                            if key not in file.info["BIDS"]:
-                                bids_path += f"missing_{key} "
-                        if bids_path == "":
-                            if file.info["BIDS"]["ignore"]:
-                                bids_path = "ignored"
+                    # determine full BIDS path
+                    if "BIDS" in file.info:
+                        if file.info["BIDS"] == "NA":
+                            bids_path = "nonBids"
+                        else:
+                            bids_path = ""
+                            expected = ["ignore", "Folder", "Filename"]
+                            for key in expected:
+                                if key not in file.info["BIDS"]:
+                                    bids_path += f"missing_{key} "
+                            if bids_path == "":
+                                if file.info["BIDS"]["ignore"]:
+                                    bids_path = "ignored"
+                                else:
+                                    bids_path = (
+                                        f"{file.info['BIDS']['Folder']}/"
+                                        + f"{file.info['BIDS']['Filename']}"
+                                    )
+                        if "IntendedFor" in file.info and len(file.info["IntendedFor"]) > 0:
+                            intended_fors[file.name] = file.info["IntendedFor"]
+                            intended_for_acq_label[file.name] = acquisition.label
+                            intended_for_acq_id[file.name] = acquisition.id
+                            if "IntendedFor" in file.info["BIDS"]:
+                                intended_for_dirs[file.name] = file.info["BIDS"]["IntendedFor"]
                             else:
-                                bids_path = (
-                                    f"{file.info['BIDS']['Folder']}/"
-                                    + f"{file.info['BIDS']['Filename']}"
-                                )
-                    if "IntendedFor" in file.info["BIDS"]:
-                        intended_for_acq_label[file.name] = acquisition.label
-                        intended_for_acq_id[file.name] = acquisition.id
-                        intended_for_dirs[file.name] = file.info["BIDS"]["IntendedFor"]
-                        intended_fors[file.name] = file.info["IntendedFor"]
-                else:
-                    bids_path = "Not_yet_BIDS_curated"
+                                # This only happens when a previous curation run had folder(s) here
+                                # but this one does not.
+                                intended_for_dirs[file.name] = [{"Folder": "folder is missing"}]
+                    else:
+                        bids_path = "Not_yet_BIDS_curated"
 
-                if "SeriesNumber" in file.info:
-                    series_number = file.info["SeriesNumber"]
-                else:
-                    series_number = "?"
+                    if "SeriesNumber" in file.info:
+                        series_number = file.info["SeriesNumber"]
+                    else:
+                        series_number = "?"
 
-                # Detect Duplicates
-                if bids_path in ["ignored", "nonBids", "Not_yet_BIDS_curated"]:
-                    unique = ""
-                elif bids_path in seen_paths:
-                    seen_paths[bids_path] += 1
-                    unique = f"duplicate {seen_paths[bids_path]}"
-                else:
-                    seen_paths[bids_path] = 0
-                    unique = "unique"
+                    # Detect Duplicates
+                    if bids_path in ["ignored", "nonBids", "Not_yet_BIDS_curated"]:
+                        unique = ""
+                    elif bids_path in seen_paths:
+                        seen_paths[bids_path] += 1
+                        unique = f"duplicate {seen_paths[bids_path]}"
+                        num_duplicates += 1
+                    else:
+                        seen_paths[bids_path] = 0
+                        unique = "unique"
 
-                do_print(
-                    f"{series_number}, {acquisition.label}, "
-                    + f"{file.name}, {file.type}, {bids_path}, {unique}"
-                )
+                    do_print(
+                        f"{series_number}, {acquisition.label}, "
+                        + f"{file.name}, {file.type}, {bids_path}, {unique}"
+                    )
 
-                nifti_df.loc[ii] = [
-                    series_number,
-                    acquisition.label,
-                    file.name,
-                    file.type,
-                    bids_path,
-                    unique
-                ]
-                ii += 1
+                    nifti_df.loc[ii] = [
+                        series_number,
+                        acquisition.label,
+                        file.name,
+                        file.type,
+                        bids_path,
+                        unique,
+                    ]
+                    ii += 1
 
         nifti_df.sort_values(by=["Curated BIDS path"], inplace=True)
 
@@ -209,7 +217,9 @@ def save_curation_csvs(fw, group_label, project_label):
 
                 for k, v in all_intended_for_dirs[subj].items():
                     do_print(f"{all_intended_for_acq_label[subj][k]}, {k}")
-                    intendedfors_writer.writerow([all_intended_for_acq_label[subj][k], k])
+                    intendedfors_writer.writerow(
+                        [all_intended_for_acq_label[subj][k], k]
+                    )
                     for i in v:
                         do_print(f",{i['Folder']}")
                         intendedfors_writer.writerow(["", i["Folder"]])
@@ -219,7 +229,7 @@ def save_curation_csvs(fw, group_label, project_label):
                             intendedfors_writer.writerow(["", "", j])
 
         # Keep only proper file paths if they match fieldmaps as per provided regexes
-        if args.intended_for:  
+        if args.intended_for:
 
             string_pairs = zip(args.intended_for[::2], args.intended_for[1::2])
             # for pair in string_pairs:
@@ -280,9 +290,7 @@ def save_curation_csvs(fw, group_label, project_label):
 
             for k, v in all_intended_for_dirs[subj].items():
                 do_print(f"{all_intended_for_acq_label[subj][k]}, {k}")
-                intendedfors_writer.writerow(
-                    [all_intended_for_acq_label[subj][k], k]
-                )
+                intendedfors_writer.writerow([all_intended_for_acq_label[subj][k], k])
                 for i in v:
                     do_print(f",{i['Folder']}")
                     intendedfors_writer.writerow(["", i["Folder"]])
@@ -290,6 +298,14 @@ def save_curation_csvs(fw, group_label, project_label):
                     for j in new_intended_fors[subj][k]:
                         do_print(f",,{j}")
                         intendedfors_writer.writerow(["", "", j])
+
+    if num_duplicates > 0:
+        print("ERROR: the following BIDS paths appear more than once:")
+        for path in seen_paths:
+            if seen_paths[bids_path] > 0:
+                print(f"  {path}")
+    else:
+        print("No duplicates were found.")
 
 
 if __name__ == "__main__":
