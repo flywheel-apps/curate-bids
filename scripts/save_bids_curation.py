@@ -68,10 +68,16 @@ def save_curation_csvs(fw, group_label, project_label):
 
     project = fw.projects.find_one(f"group={group_label},label={project_label}")
 
+    acquisition_labels = dict()
+
     all_intended_for_acq_label = dict()
     all_intended_for_acq_id = dict()
     all_intended_for_dirs = dict()
     all_intended_fors = dict()
+
+    all_seen_paths = dict()
+
+    num_duplicates = 0
 
     all_df = pd.DataFrame(
         columns=(
@@ -96,6 +102,8 @@ def save_curation_csvs(fw, group_label, project_label):
         nifti_df = pd.DataFrame(
             columns=(
                 "SeriesNumber",
+                "Subject",
+                "Session",
                 "Acquisition label (SeriesDescription)",
                 "File name",
                 "File type",
@@ -107,12 +115,16 @@ def save_curation_csvs(fw, group_label, project_label):
         ii = 0  # Current acquisition index
 
         seen_paths = dict()
-        num_duplicates = 0
 
         for session in subject.sessions():
             for acquisition in session.acquisitions():
 
                 do_print(f"{ii}  {acquisition.label}")
+
+                if acquisition.label in acquisition_labels:
+                    acquisition_labels[acquisition.label] += 1
+                else:
+                    acquisition_labels[acquisition.label] = 1
 
                 for file in acquisition.reload().files:
 
@@ -164,12 +176,15 @@ def save_curation_csvs(fw, group_label, project_label):
                         unique = "unique"
 
                     do_print(
-                        f"{series_number}, {acquisition.label}, "
-                        + f"{file.name}, {file.type}, {bids_path}, {unique}"
+                        f"{series_number}, {subject.label}, {session.label}, "
+                        f"{acquisition.label}, {file.name}, {file.type}, "
+                        f"{bids_path}, {unique}"
                     )
 
                     nifti_df.loc[ii] = [
                         series_number,
+                        subject.label,
+                        session.label,
                         acquisition.label,
                         file.name,
                         file.type,
@@ -186,6 +201,8 @@ def save_curation_csvs(fw, group_label, project_label):
         all_intended_for_acq_id[subject.label] = intended_for_acq_id
         all_intended_for_dirs[subject.label] = intended_for_dirs
         all_intended_fors[subject.label] = intended_fors
+
+        all_seen_paths[subject.label] = seen_paths
 
     safe_group_label = make_file_name_safe(group_label, replace_str="_")
     safe_project_label = make_file_name_safe(project_label, replace_str="_")
@@ -299,11 +316,25 @@ def save_curation_csvs(fw, group_label, project_label):
                         do_print(f",,{j}")
                         intendedfors_writer.writerow(["", "", j])
 
+    # save acquisition labels count list
+    with open(
+        f"{safe_group_label}_{safe_project_label}_acquisitions.csv", mode="w"
+    ) as acquisition_file:
+        acquisition_writer = csv.writer(
+            acquisition_file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
+        )
+
+        acquisition_writer.writerow(["acquisition label", "count"])
+
+        for label, count in acquisition_labels.items():
+            acquisition_writer.writerow([label, count])
+
     if num_duplicates > 0:
         print("ERROR: the following BIDS paths appear more than once:")
-        for path in seen_paths:
-            if seen_paths[bids_path] > 0:
-                print(f"  {path}")
+        for subject in project.subjects.iter_find():
+            for path in all_seen_paths[subject.label]:
+                if all_seen_paths[subject.label][path] > 0:
+                    print(f"  {path}")
     else:
         print("No duplicates were found.")
 
@@ -315,6 +346,8 @@ if __name__ == "__main__":
     )
     parser.add_argument("group_label", help="fw://group_label/project_label")
     parser.add_argument("project_label", help="fw://group_label/project_label")
+    parser.add_argument('-a', '--api-key', action='store', type=str,
+                        help='api-key (default is to use currently logged in instance')
     parser.add_argument(
         "-i",
         "--intended-for",
@@ -329,7 +362,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # This works if you are logged into a Flywheel instance on a Terminal:
-    fw = flywheel.Client("", root=True)
+    if args.api_key:
+        fw = flywheel.Client(api_key=args.api_key, root=True)
+    else:
+        fw = flywheel.Client("", root=True)
 
     # Prints the instance you are logged into to make sure it is the right one.
     print(fw.get_config().site.api_url)
