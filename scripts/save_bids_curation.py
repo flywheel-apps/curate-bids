@@ -609,9 +609,9 @@ if __name__ == "__main__":
 
     # This works if you are logged into a Flywheel instance on a Terminal:
     if args.api_key:
-        fw = flywheel.Client(api_key=args.api_key, root=True)
+        fw = flywheel.Client(api_key=args.api_key)
     else:
-        fw = flywheel.Client("", root=True)
+        fw = flywheel.Client("")
 
     group_label = args.group_label
     safe_group_label = make_file_name_safe(group_label, replace_str="_")
