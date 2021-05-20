@@ -71,7 +71,9 @@ def do_print(msg):
 
 
 def get_bids_info():
-    """Get BIDS mapping from acquisition names to BIDS paths and fieldmap IntendedFors.
+    """Get BIDS mapping from acquisition file names to BIDS paths and fieldmap IntendedFors.
+
+    Information is gathered here and saved into global variables.
 
     Returns:
             num_subjects (int): number of subjects found
@@ -84,25 +86,32 @@ def get_bids_info():
     num_sessions = 0
     num_duplicates = 0
 
-    # Look through all files in the project and get their BIDS path
+    # Look through all acquisition files in the project and get their BIDS path
     for subject in project.subjects.iter_find():
 
         num_subjects += 1
 
         do_print(subject.label)
 
-        subjects_have[subject.label] = dict()
+        # The number of times an acquisition with a given name is found for each subject
+        subjects_have[
+            subject.label
+        ] = dict()  # subjects_have[subject.label][acquisition.label] = count
 
+        # Gather IntendedFor information here to be saved into a .csv file later
         intended_for_acq_label = dict()
         intended_for_acq_id = dict()
         intended_for_dirs = dict()
         intended_fors = dict()
 
+        # Gather file information here for saving into a .csv file later
         nifti_df = pd.DataFrame(columns=COLUMNS)
 
         ii = 0  # Current acquisition index
 
-        seen_paths = dict()
+        seen_paths = (
+            dict()
+        )  # seen_paths[bids_path] = count (# of times this path has been found)
 
         for session in subject.sessions():
             num_sessions += 1
@@ -128,6 +137,7 @@ def get_bids_info():
                             bids_path = "nonBids"
                         else:
                             bids_path = ""
+                            # check for craziness that should never happen
                             expected = ["ignore", "Folder", "Filename"]
                             for key in expected:
                                 if key not in file.info["BIDS"]:
@@ -135,11 +145,12 @@ def get_bids_info():
                             if bids_path == "":
                                 if file.info["BIDS"]["ignore"]:
                                     bids_path = "ignored"
-                                else:
+                                else:  # get the actual path
                                     bids_path = (
                                         f"{file.info['BIDS']['Folder']}/"
                                         + f"{file.info['BIDS']['Filename']}"
                                     )
+
                         if (
                             "IntendedFor" in file.info
                             and len(file.info["IntendedFor"]) > 0
@@ -217,7 +228,10 @@ def save_niftis():
 
 
 def save_intendedfors():
-    """save field map IntendedFor lists."""
+    """save field map IntendedFor lists.
+
+    If args.intended_for has been provided (a list of regex pairs), this method will only keep the ones that match
+    """
 
     with open(
         f"{safe_group_label}_{safe_project_label}_intendedfors.csv", mode="w"
@@ -446,7 +460,9 @@ def save_acquisitions():
                 acquisition_writer.writerow([acq_label, usual_count])
 
         acquisition_writer.writerow([])
-        acquisition_writer.writerow(["Subjects that have all of the Typical Acquisitions"])
+        acquisition_writer.writerow(
+            ["Subjects that have all of the Typical Acquisitions"]
+        )
         troubled_subjects = dict()
         for subj_label in subjects_have:
             no_errors = True
@@ -483,7 +499,12 @@ def save_acquisitions():
                     for warning in troubled_subjects[subj_label]:
                         acquisition_writer.writerow(["", warning])
                 else:
-                    acquisition_writer.writerow(["", "This subject has all of the typical acquisitions, no more, no less."])
+                    acquisition_writer.writerow(
+                        [
+                            "",
+                            "This subject has all of the typical acquisitions, no more, no less.",
+                        ]
+                    )
 
         acquisition_writer.writerow([])
         acquisition_writer.writerow(["Subjects that don't have Typical Acquisitions"])
@@ -579,7 +600,7 @@ if __name__ == "__main__":
         "-p",
         "--pickle",
         action="store_true",
-        help="Save/use pickeled data instead of getting it multiple times (for debugging)",
+        help="Save/use pickled data instead of getting it multiple times (for debugging)",
     )
 
     parser.add_argument("-v", "--verbose", action="count", default=0)
@@ -601,8 +622,12 @@ if __name__ == "__main__":
     project = fw.projects.find_one(f"group={group_label},label={project_label}")
 
     # Counts of particular acquisitions
-    acquisition_labels = dict()  # acquisition_labels[acquisition.label] = count
-    subjects_have = dict()  # subjects_have[subject.label][acquisition.label] = count
+    acquisition_labels = (
+        dict()
+    )  # acquisition_labels[acquisition.label] = count over entire project
+    subjects_have = (
+        dict()
+    )  # subjects_have[subject.label][acquisition.label] = count for this subject
 
     all_intended_for_acq_label = dict()
     all_intended_for_acq_id = dict()
