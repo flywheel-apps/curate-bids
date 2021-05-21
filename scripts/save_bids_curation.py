@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Save BIDS mapping from acquisition names to BIDS paths and fieldmap IntendedFors as sorted csv files.
+"""Save BIDS mapping from containers and file names to BIDS paths and fieldmap IntendedFors as sorted csv files.
 
 Note that you need to be logged in to a Flywheel instance using the CLI (fw login ...)
 
-INTENDED_FOR is a space separated pair of regular expressions, the first one matches the fieldmap file name and the
-second of each pair matches the BIDS filename.
+INTENDED_FOR is a space separated pair of regular expressions, the first one matches the fieldmap file name and the second of each pair matches the BIDS filename.
 
 Example with --intended-for parameter:
    save_bids_curation.py  Group Project -i '.*fmap(_|-)SE(_|-).*' '_run-1' '.*gre.+_e[12]\.' '_run-2' '.*gre.+_ph' '_run-2'
@@ -27,6 +26,7 @@ COLUMNS = (
     "Subject",
     "Session",
     "SeriesNumber",
+    "Ignored",
     "Acquisition label (SeriesDescription)",
     "File name",
     "File type",
@@ -71,7 +71,11 @@ def do_print(msg):
 
 
 def get_bids_info():
-    """Get BIDS mapping from acquisition file names to BIDS paths and fieldmap IntendedFors.
+    """Gather information to describe BIDS mapping.
+
+    For each container and file name, get the full BIDS path, fieldmap IntendedFors
+    and other information to be able to present the context so that proper bids
+    information can be determined.
 
     Information is gathered here and saved into global variables.
 
@@ -115,6 +119,12 @@ def get_bids_info():
 
         for session in subject.sessions():
             num_sessions += 1
+
+            if "BIDS" in session.info:
+                session_ignored = "S" if session.info["BIDS"]["ignore"] else ""
+            else:
+                session_ignored = "sX"  # means BIDS info missing for session
+
             for acquisition in session.acquisitions():
 
                 do_print(f"{ii}  {acquisition.label}")
@@ -129,12 +139,22 @@ def get_bids_info():
                 else:
                     subjects_have[subject.label][acquisition.label] = 1
 
+                if "BIDS" in acquisition.info:
+                    acquisition_ignored = (
+                        "A" if acquisition.info["BIDS"]["ignore"] else ""
+                    )
+                else:
+                    acquisition_ignored = (
+                        "aX"  # means BIDS info missing for acquisition
+                    )
+
                 for file in acquisition.reload().files:
 
                     # determine full BIDS path
                     if "BIDS" in file.info:
                         if file.info["BIDS"] == "NA":
                             bids_path = "nonBids"
+                            file_ignored = ""
                         else:
                             bids_path = ""
                             # check for craziness that should never happen
@@ -143,13 +163,12 @@ def get_bids_info():
                                 if key not in file.info["BIDS"]:
                                     bids_path += f"missing_{key} "
                             if bids_path == "":
-                                if file.info["BIDS"]["ignore"]:
-                                    bids_path = "ignored"
-                                else:  # get the actual path
-                                    bids_path = (
-                                        f"{file.info['BIDS']['Folder']}/"
-                                        + f"{file.info['BIDS']['Filename']}"
-                                    )
+                                bids_path = (
+                                    f"{file.info['BIDS']['Folder']}/"
+                                    + f"{file.info['BIDS']['Filename']}"
+                                )
+
+                            file_ignored = "F" if file.info["BIDS"]["ignore"] else ""
 
                         if (
                             "IntendedFor" in file.info
@@ -170,14 +189,19 @@ def get_bids_info():
                                 ]
                     else:
                         bids_path = "Not_yet_BIDS_curated"
+                        file_ignored = ""
 
                     if "SeriesNumber" in file.info:
                         series_number = file.info["SeriesNumber"]
                     else:
                         series_number = "?"
 
+                    ignored = f"{session_ignored} {acquisition_ignored} {file_ignored}"
+
                     # Detect Duplicates
-                    if bids_path in ["ignored", "nonBids", "Not_yet_BIDS_curated"]:
+                    if bids_path in ["nonBids", "Not_yet_BIDS_curated"]:
+                        unique = ""
+                    elif ignored != "  ":
                         unique = ""
                     elif bids_path in seen_paths:
                         seen_paths[bids_path] += 1
@@ -188,7 +212,7 @@ def get_bids_info():
                         unique = "unique"
 
                     do_print(
-                        f"{series_number}, {subject.label}, {session.label}, "
+                        f"{subject.label}, {session.label}, {series_number}, {ignored},"
                         f"{acquisition.label}, {file.name}, {file.type}, "
                         f"{bids_path}, {unique}"
                     )
@@ -197,6 +221,7 @@ def get_bids_info():
                         subject.label,
                         session.label,
                         series_number,
+                        ignored,
                         acquisition.label,
                         file.name,
                         file.type,
@@ -579,8 +604,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter
     )
-    parser.add_argument("group_label", help="fw://group_label/project_label")
-    parser.add_argument("project_label", help="fw://group_label/project_label")
+    parser.add_argument("group_id", help="fw://group_id/project_label")
+    parser.add_argument("project_label", help="fw://group_id/project_label")
     parser.add_argument(
         "-a",
         "--api-key",
@@ -613,13 +638,13 @@ if __name__ == "__main__":
     else:
         fw = flywheel.Client("")
 
-    group_label = args.group_label
-    safe_group_label = make_file_name_safe(group_label, replace_str="_")
+    group_id = args.group_id
+    safe_group_label = make_file_name_safe(group_id, replace_str="_")
 
     project_label = args.project_label
     safe_project_label = make_file_name_safe(project_label, replace_str="_")
 
-    project = fw.projects.find_one(f"group={group_label},label={project_label}")
+    project = fw.projects.find_one(f"group={group_id},label={project_label}")
 
     # Counts of particular acquisitions
     acquisition_labels = (
