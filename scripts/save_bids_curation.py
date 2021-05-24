@@ -540,7 +540,8 @@ def save_acquisitions():
 
 
 def main():
-    global all_df, acquisition_labels, subjects_have, all_intended_for_acq_label, all_intended_for_acq_id, all_intended_for_dirs, all_intended_fors, all_seen_paths
+    global all_df, acquisition_labels, subjects_have, all_intended_for_acq_label, all_intended_for_acq_id, \
+    all_intended_for_dirs, all_intended_fors, all_seen_paths, most_subjects_have
 
     if args.pickle and Path(PICKLE_FILE_NAME).exists():
 
@@ -555,6 +556,7 @@ def main():
         all_intended_for_dirs = data["all_intended_for_dirs"]
         all_intended_fors = data["all_intended_fors"]
         all_seen_paths = data["all_seen_paths"]
+        most_subjects_have = data["most_subjects_have"]
         num_subjects = data["num_subjects"]
         num_sessions = data["num_sessions"]
         num_duplicates = data["num_duplicates"]
@@ -574,6 +576,7 @@ def main():
             data["all_intended_for_dirs"] = all_intended_for_dirs
             data["all_intended_fors"] = all_intended_fors
             data["all_seen_paths"] = all_seen_paths
+            data["most_subjects_have"] = most_subjects_have
             data["num_subjects"] = num_subjects
             data["num_sessions"] = num_sessions
             data["num_duplicates"] = num_duplicates
@@ -587,6 +590,7 @@ def main():
 
     save_acquisition_details(num_subjects, num_sessions)
 
+    # This must be called after save_acquisition_details() because it sets most_subjects_have
     save_acquisitions()
 
     if num_duplicates > 0:
@@ -646,13 +650,13 @@ if __name__ == "__main__":
 
     project = fw.projects.find_one(f"group={group_id},label={project_label}")
 
+    all_df = pd.DataFrame(columns=COLUMNS)
+
     # Counts of particular acquisitions
-    acquisition_labels = (
-        dict()
-    )  # acquisition_labels[acquisition.label] = count over entire project
-    subjects_have = (
-        dict()
-    )  # subjects_have[subject.label][acquisition.label] = count for this subject
+    # acquisition_labels[acquisition.label] = count over entire project
+    acquisition_labels = dict()
+    # subjects_have[subject.label][acquisition.label] = count for this subject
+    subjects_have = dict()
 
     all_intended_for_acq_label = dict()
     all_intended_for_acq_id = dict()
@@ -662,8 +666,6 @@ if __name__ == "__main__":
     all_seen_paths = dict()
 
     most_subjects_have = dict()
-
-    all_df = pd.DataFrame(columns=COLUMNS)
 
     # Prints the instance you are logged into to make sure it is the right one.
     print(fw.get_config().site.api_url)
