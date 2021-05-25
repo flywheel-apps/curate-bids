@@ -3,7 +3,7 @@
 
 Note that you need to be logged in to a Flywheel instance using the CLI (fw login ...)
 
-INTENDED_FOR is a space separated pair of regular expressions, the first one matches the fieldmap file name and the second of each pair matches the BIDS filename.
+INTENDED_FOR is a space separated pair of regular expressions, the first one matches the fieldmap acquisition name and the second of each pair matches the BIDS filename.
 
 Example with --intended-for parameter:
    save_bids_curation.py  Group Project -i '.*fmap(_|-)SE(_|-).*' '_run-1' '.*gre.+_e[12]\.' '_run-2' '.*gre.+_ph' '_run-2'
@@ -27,6 +27,7 @@ COLUMNS = (
     "Session",
     "SeriesNumber",
     "Ignored",
+    "Rule ID",
     "Acquisition label (SeriesDescription)",
     "File name",
     "File type",
@@ -151,6 +152,7 @@ def get_bids_info():
                 for file in acquisition.reload().files:
 
                     # determine full BIDS path
+                    rule_id = ""
                     if "BIDS" in file.info:
                         if file.info["BIDS"] == "NA":
                             bids_path = "nonBids"
@@ -169,6 +171,9 @@ def get_bids_info():
                                 )
 
                             file_ignored = "F" if file.info["BIDS"]["ignore"] else ""
+
+                            rule_id = file.info["BIDS"].get("rule_id", "")
+                            # get Path here also?
 
                         if (
                             "IntendedFor" in file.info
@@ -213,7 +218,7 @@ def get_bids_info():
 
                     do_print(
                         f"{subject.label}, {session.label}, {series_number}, {ignored},"
-                        f"{acquisition.label}, {file.name}, {file.type}, "
+                        f"{rule_id}, {acquisition.label}, {file.name}, {file.type}, "
                         f"{bids_path}, {unique}"
                     )
 
@@ -222,6 +227,7 @@ def get_bids_info():
                         session.label,
                         series_number,
                         ignored,
+                        rule_id,
                         acquisition.label,
                         file.name,
                         file.type,
@@ -307,15 +313,16 @@ def save_intendedfors():
 
                 new_intended_fors[subj] = dict()
 
-                for file_name in all_intended_for_dirs[subj]:
-                    print(f"{file_name}")
+                for file_name in all_intended_for_acq_label[subj]:
+                    acquisition_label = all_intended_for_acq_label[subj][file_name]
+                    do_print(f"{acquisition_label}")
                     for regex in regex_pairs:
-                        if regex[0].search(file_name):
+                        if regex[0].search(acquisition_label):
                             new_intended_fors[subj][file_name] = list()
                             for i_f in all_intended_fors[subj][file_name]:
                                 if regex[1].search(i_f):
                                     new_intended_fors[subj][file_name].append(i_f)
-                                    print(f"found {i_f}")
+                                    do_print(f"found {i_f}")
                             fw.modify_acquisition_file_info(
                                 all_intended_for_acq_id[subj][file_name],
                                 file_name,
@@ -623,7 +630,7 @@ if __name__ == "__main__":
         action="store",
         nargs="*",
         type=str,
-        help="pairs of regex's specifying field map file name to BIDS Filename",
+        help="pairs of regex's specifying field map acquisition name to BIDS Filename",
     )
     parser.add_argument(
         "-p",
