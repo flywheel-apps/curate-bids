@@ -155,7 +155,7 @@ def get_bids_info():
                     rule_id = ""
                     if "BIDS" in file.info:
                         if file.info["BIDS"] == "NA":
-                            bids_path = "nonBids"
+                            bids_path = "unrecognized"
                             file_ignored = ""
                         else:
                             bids_path = ""
@@ -204,10 +204,11 @@ def get_bids_info():
                     ignored = f"{session_ignored} {acquisition_ignored} {file_ignored}"
 
                     # Detect Duplicates
-                    if bids_path in ["nonBids", "Not_yet_BIDS_curated"]:
+                    if bids_path in ["unrecognized", "Not_yet_BIDS_curated"]:
                         unique = ""
-                    elif ignored != "  ":
+                    elif ignored != "  ":  # if it IS ignored
                         unique = ""
+                        bids_path = "ignored"  # don't show path to emphasize ignored
                     elif bids_path in seen_paths:
                         seen_paths[bids_path] += 1
                         unique = f"duplicate {seen_paths[bids_path]}"
