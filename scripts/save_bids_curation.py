@@ -294,8 +294,10 @@ def save_intendedfors():
                         intendedfors_writer.writerow(["", i["Folder"]])
                         all_intended_fors[subj][k].sort()
                         for j in all_intended_fors[subj][k]:
-                            do_print(f",,{j}")
-                            intendedfors_writer.writerow(["", "", j])
+                            what_to_find = f"/{i['Folder']}/"
+                            if what_to_find in j:
+                                do_print(f",,{j}")
+                                intendedfors_writer.writerow(["", "", j])
 
         # Keep only proper file paths if they match fieldmaps as per provided regexes
         if args.intended_for:
@@ -367,8 +369,9 @@ def save_intendedfors():
                     intendedfors_writer.writerow(["", i["Folder"]])
                     # new_intended_fors[subj][k].sort()
                     for j in new_intended_fors[subj][k]:
-                        do_print(f",,{j}")
-                        intendedfors_writer.writerow(["", "", j])
+                        if f"/{i['Folder']}/" in j:
+                            do_print(f",,{j}")
+                            intendedfors_writer.writerow(["", "", j])
 
 
 def save_acquisition_details(num_subjects, num_sessions):
