@@ -6,15 +6,15 @@
   "maintainer": "Flywheel <support@flywheel.io>",
   "source": "https://github.com/flywheel-apps/curate-bids",
   "url": "http://bids.neuroimaging.io/",
-  "version": "1.0.0_0.9.1",
+  "version": "1.1.1_0.9.3_rc5",
   "custom": {
-      "gear-builder": {
-           "category": "converter",
-           "image": "flywheel/curate-bids:1.0.0_0.9.1"
-      },
-      "flywheel": {
-          "suite": "BIDS"
-      }
+    "gear-builder": {
+      "category": "converter",
+      "image": "flywheel/curate-bids:1.1.1_0.9.3_rc5"
+    },
+    "flywheel": {
+      "suite": "BIDS"
+    }
   },
   "license": "BSD-3-Clause",
   "inputs": {
@@ -29,9 +29,28 @@
       "default": false
     },
     "entire_project": {
-      "description": "Run bids curation on the entire project",
+      "description": "Run bids curation on the entire project.  If this is not selected then run on only the current session.",
       "type": "boolean",
       "default": true
+    },
+    "template_type": {
+      "description": "Which template type to use. Options: Default, BIDS-v1, or ReproIn. Custom expects a BIDS Project Curation JSON Template as a project-level file with the filename ending in project-template.json",
+      "type": "string",
+      "default": "Default",
+      "enum": [
+        "Default",
+        "BIDS-v1",
+        "ReproIn"
+      ]
+    },
+    "verbosity": {
+      "description": "Set log level to INFO or DEBUG.",
+      "type": "string",
+      "default": "INFO",
+      "enum": [
+        "INFO",
+        "DEBUG"
+      ]
     }
   },
   "command": "python3 run.py"
